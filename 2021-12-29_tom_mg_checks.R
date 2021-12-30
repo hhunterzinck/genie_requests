@@ -544,8 +544,8 @@ if (verbose) {
 if (!res_yaml_error) {
   res_all <- rbind(res_all, cbind(NA, synid_file_seq, "yaml generates errors"))
 }
-if (!res_yaml_warn) {
-  res_all <- rbind(res_all, cbind(NA, synid_file_seq, "yaml generates errors or warnings"))
+if (res_yaml_error && !res_yaml_warn) {
+  res_all <- rbind(res_all, cbind(NA, synid_file_seq, "yaml generates warnings"))
 }
 if (!is.null(res_seq)) {
   res_all <- rbind(res_all, cbind(NA, res_seq, "seq_assay_id in sample file but not assay_information.yaml"))
