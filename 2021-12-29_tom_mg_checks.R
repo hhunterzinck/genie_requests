@@ -317,6 +317,33 @@ clean_seq_ids <- function(raw) {
 
 # check functions for main genie -----------------------
 
+check_assay_yaml_validity_strict <- function(synid_file_yaml) {
+  
+  data <- tryCatch({
+    data_seq <- read_yaml(synGet(synid_file_yaml)$path)
+  }, error = function(cond) {
+    error_invalid <- T
+    return(NULL)
+  }, warning = function(cond) {
+    return(NULL)
+  })
+  
+  return(!is.null(data))
+}
+
+check_assay_yaml_validity_loose <- function(synid_file_yaml) {
+  
+  data <- tryCatch({
+    data_seq <- read_yaml(synGet(synid_file_yaml)$path)
+  }, error = function(cond) {
+    error_invalid <- T
+    return(NULL)
+  })
+  
+  return(!is.null(data))
+}
+
+
 #' Check that assay_information.yaml has a valid format.
 #' 
 #' @param synid_project Synapse ID of project
@@ -324,7 +351,7 @@ clean_seq_ids <- function(raw) {
 #' @param warning_invalid Consider YAML files generating warnings in addition to any errors as invalid;
 #' otherwise, only errors indicate invalid
 #' @return TRUE if valid, otherwise FALSE
-check_assay_yaml_validity <- function(synid_project, center, synid_file_seq = NULL, warning_invalid = F) {
+check_assay_yaml_validity <- function(synid_project, center, synid_file_seq = NULL, strict = T) {
   
   if (is.null(synid_file_seq)) {
     synid_folder_data <- get_synid_folder_center(synid_project, center)
@@ -332,18 +359,14 @@ check_assay_yaml_validity <- function(synid_project, center, synid_file_seq = NU
                                         file_type = "assay")
   }
   
-  data <- tryCatch({
-    data_seq <- read_yaml(synGet(synid_file_seq)$path)
-  }, error = function(cond) {
-    return(NULL)
-  }, warning = function(cond) {
-    if (warning_invalid) {
-      return(NULL)
-    }
-    return(data_seq <- read_yaml(synGet(synid_file_seq)$path))
-  })
+  res <- NA
+  if (strict) {
+    res <- check_assay_yaml_validity_strict(synid_file_seq)
+  } else {
+    res <- check_assay_yaml_validity_loose(synid_file_seq)
+  }
   
-  return(!is.null(data))
+  return(res)
 }
 
 #' Check for sequencing assay IDs listed in clinical file but not in the metadata file.
@@ -504,8 +527,8 @@ synid_file_pat <- get_synid_file_mg(synid_folder_data = synid_folder_data,
 synid_file_sam <- get_synid_file_mg(synid_folder_data = synid_folder_data, 
                                     file_type = "sample")
 
-res_yaml_error <- check_assay_yaml_validity(synid_project, center, synid_file_seq = synid_file_seq, warning_invalid = F)
-res_yaml_warn <- check_assay_yaml_validity(synid_project, center, synid_file_seq = synid_file_seq, warning_invalid = T)
+res_yaml_error <- check_assay_yaml_validity(synid_project, center, synid_file_seq = synid_file_seq, strict = F)
+res_yaml_warn <- check_assay_yaml_validity(synid_project, center, synid_file_seq = synid_file_seq, strict = T)
 if (verbose) {
   print(glue("assay_information.yaml valid (no errors): {res_yaml_error}"))
   print(glue("assay_information.yaml valid (no errors or warnings): {res_yaml_warn}"))
