@@ -1,5 +1,11 @@
 # Description: Additional functions for main GENIE validator to front-load 
 #               checks currently caught by the post-processing dashboard. 
+# Implemented check functions:
+# - check_assay_yaml_validity
+# - check_seq_assay_id
+# - check_pat_sam_id
+# - check_contact_info
+# - check_death_info
 # Author: Haley Hunter-Zinck
 # Date: 2021-12-29
 
@@ -51,14 +57,14 @@ synLogin()
 # print parameters
 if (verbose) {
   print(glue("Parameters"))
-  print(glue("- synid_project: '{synGet(synid_project, downloadFile = F)$properties$name}' ({synid_project})"))
+  print(glue("- Project: '{synGet(synid_project, downloadFile = F)$properties$name}' ({synid_project})"))
   if (is.null(synid_folder_output)) {
-    print(glue("- synid_folder_output: NULL (writing locally)"))
+    print(glue("- Output folder: {getwd()}"))
   } else {
-    print(glue("- synid_folder_output: '{synGet(synid_folder_output, downloadFile = F)$properties$name}' {synid_folder_output}"))
+    print(glue("- Output folder: '{synGet(synid_folder_output, downloadFile = F)$properties$name}' {synid_folder_output}"))
   }
-  print(glue("- center: '{center}'"))
-  print(glue("- verbose: {verbose}"))
+  print(glue("- Center: '{center}'"))
+  print(glue("- Verbose: {verbose}"))
   print(glue("--------"))
 }
 
@@ -81,7 +87,8 @@ get_synapse_entity_data_in_csv <- function(synapse_id,
                                            sep = ",", 
                                            na.strings = c("NA"), 
                                            header = T,
-                                           check_names = F) {
+                                           check_names = F,
+                                           comment.char = "#") {
   
   if (is.na(version)) {
     entity <- synGet(synapse_id)
@@ -91,7 +98,7 @@ get_synapse_entity_data_in_csv <- function(synapse_id,
   
   data <- read.csv(entity$path, stringsAsFactors = F, 
                    na.strings = na.strings, sep = sep, check.names = check_names,
-                   header = header)
+                   header = header, comment.char = comment.char)
   return(data)
 }
 
@@ -284,10 +291,27 @@ get_synid_file_mg <- function(synid_folder_data,
   return(file_name)
 }
 
+#' Format column names of clinical files for standard processing.
+#' - convert to all upper case
+#' - replace any duplicate column names with unique column name
+#' 
+#' @param raw Vector of strings representing raw column names
+#' @return Vector of strings
 clean_column_names <- function(raw) {
-  mod <- gsub(raw, pattern = "#", replacement = "", fixed = T)
-  mod <- toupper(mod)
+  mod <- toupper(raw)
   mod[which(duplicated(raw))] <- glue("{mod[which(duplicated(raw))]}_2")
+  return(mod)
+}
+
+#' Format sequencing assay IDs for standard processing.
+#' - convert to all lower case
+#' - replace any underscores with hyphens
+#' 
+#' @param raw Vector of strings representing raw column names
+#' @return Vector of strings
+clean_seq_ids <- function(raw) {
+  mod <- tolower(raw)
+  mod <- gsub(pattern = "_", replacement = "-", x = mod)
   return(mod)
 }
 
@@ -297,8 +321,10 @@ clean_column_names <- function(raw) {
 #' 
 #' @param synid_project Synapse ID of project
 #' @param center Name of center corresponding to center folder
+#' @param warning_invalid Consider YAML files generating warnings in addition to any errors as invalid;
+#' otherwise, only errors indicate invalid
 #' @return TRUE if valid, otherwise FALSE
-check_assay_yaml_validity <- function(synid_project, center, synid_file_seq = NULL) {
+check_assay_yaml_validity <- function(synid_project, center, synid_file_seq = NULL, warning_invalid = F) {
   
   if (is.null(synid_file_seq)) {
     synid_folder_data <- get_synid_folder_center(synid_project, center)
@@ -311,21 +337,23 @@ check_assay_yaml_validity <- function(synid_project, center, synid_file_seq = NU
   }, error = function(cond) {
     return(NULL)
   }, warning = function(cond) {
+    if (warning_invalid) {
+      return(NULL)
+    }
+    return(data_seq <- read_yaml(synGet(synid_file_seq)$path))
   })
   
-  if (is.null(data)) {
-    return(F)
-  }
-  
-  return(T)
+  return(!is.null(data))
 }
 
 #' Check for sequencing assay IDs listed in clinical file but not in the metadata file.
 #' 
 #' @param synid_project Synapse ID of project
 #' @param center Name of center corresponding to center folder
+#' @param fuzzy boolean indicating whether fuzzy matching should be used for comparing seq_assay_ids;
+#' otherwise, exact match used
 #' @return Vector of seq_assay_id values in sample file but not metadata or NULL if none found
-check_seq_assay_id <- function(synid_project, center, synid_file_seq = NULL, synid_file_sam = NULL) {
+check_seq_assay_id <- function(synid_project, center, synid_file_seq = NULL, synid_file_sam = NULL, fuzzy = F) {
   
   if (is.null(synid_file_seq)) {
     synid_folder_data <- get_synid_folder_center(synid_project, center)
@@ -343,9 +371,14 @@ check_seq_assay_id <- function(synid_project, center, synid_file_seq = NULL, syn
   colnames(data_sam) <- clean_column_names(colnames(data_sam))
   
   assay_seq <- unlist(lapply(data_seq, function(x) {return(x$assay_specific_info[[1]]$SEQ_ASSAY_ID)}))
-  assay_sam <- unlist(data_sam %>% select(SEQ_ASSAY_ID) %>% distinct())
-  
-  res <- setdiff(assay_sam, assay_seq)
+  assay_sam_raw <- unlist(data_sam %>% select(SEQ_ASSAY_ID) %>% distinct())
+  assay_sam <- assay_sam_raw
+  if (fuzzy) {
+    assay_seq <- clean_seq_ids(assay_seq)
+    assay_sam <- clean_seq_ids(assay_sam)
+  }
+
+  res <- assay_sam_raw[match(setdiff(assay_sam, assay_seq), assay_sam)]
   if (length(res)) {
     return(res)
   }
@@ -471,13 +504,16 @@ synid_file_pat <- get_synid_file_mg(synid_folder_data = synid_folder_data,
 synid_file_sam <- get_synid_file_mg(synid_folder_data = synid_folder_data, 
                                     file_type = "sample")
 
-res_yaml <- check_assay_yaml_validity(synid_project, center, synid_file_seq = synid_file_seq)
+res_yaml_error <- check_assay_yaml_validity(synid_project, center, synid_file_seq = synid_file_seq, warning_invalid = F)
+res_yaml_warn <- check_assay_yaml_validity(synid_project, center, synid_file_seq = synid_file_seq, warning_invalid = T)
 if (verbose) {
-  print(glue("assay_information.yaml is valid: {res_yaml}"))
+  print(glue("assay_information.yaml valid (no errors): {res_yaml_error}"))
+  print(glue("assay_information.yaml valid (no errors or warnings): {res_yaml_warn}"))
 }
 
-if (res_yaml) {
-  res_seq <- check_seq_assay_id(synid_project, center, synid_file_seq = synid_file_seq, synid_file_sam = synid_file_sam)
+if (res_yaml_error) {
+  res_seq <- check_seq_assay_id(synid_project, center, synid_file_seq = synid_file_seq, 
+                                synid_file_sam = synid_file_sam, fuzzy = T)
   
   if (verbose) {
     print(glue("number of seq_assay_ids absent form metadata: {length(res_seq)}"))
@@ -505,8 +541,11 @@ if (verbose) {
   print(glue("number of patients with inconsistent contact info: {length(res_death)}"))
 }
 
-if (!res_yaml) {
-  res_all <- rbind(res_all, cbind(NA, synid_file_seq, "yaml file invalid"))
+if (!res_yaml_error) {
+  res_all <- rbind(res_all, cbind(NA, synid_file_seq, "yaml generates errors"))
+}
+if (!res_yaml_warn) {
+  res_all <- rbind(res_all, cbind(NA, synid_file_seq, "yaml generates errors or warnings"))
 }
 if (!is.null(res_seq)) {
   res_all <- rbind(res_all, cbind(NA, res_seq, "seq_assay_id in sample file but not assay_information.yaml"))
