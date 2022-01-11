@@ -27,5 +27,3 @@ Rscript 2022-01-10_courtney_mg_file_mod_views.R -f syn11727024 -p syn26715672 -c
 Rscript 2022-01-10_courtney_mg_file_mod_views.R -f syn5017776 -p syn26715672 -c VICC -v
 Rscript 2022-01-10_courtney_mg_file_mod_views.R -f syn12245182 -p syn26715672 -c WAKE -v
 Rscript 2022-01-10_courtney_mg_file_mod_views.R -f syn11703406 -p syn26715672 -c YALE -v
-
-

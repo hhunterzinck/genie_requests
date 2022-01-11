@@ -132,11 +132,13 @@ create_synapse_file_view <- function(name,
                                      synid_folder_scope, 
                                      synid_project_parent, 
                                      include_entity_types = c(EntityViewType$FILE,
-                                                              EntityViewType$FOLDER)) {
+                                                              EntityViewType$FOLDER),
+                                     add_annotation_columns = F) {
   entity_view <- EntityViewSchema(name = name, 
                                   parent = synid_project_parent, 
                                   scopes = synid_folder_scope,
-                                  includeEntityTypes = include_entity_types)
+                                  includeEntityTypes = include_entity_types,
+                                  addAnnotationColumns = add_annotation_columns)
   synid_view <- synStore(entity_view)
   return(synid_view$properties$id)
 }
@@ -162,7 +164,7 @@ synid_table_view <- create_synapse_file_view(name = glue("{tolower(center)}-inpu
                          include_entity_types = c(EntityViewType$FILE))
 
 wiki_desc <- "## Upload Summary\nThe following table shows the number of uploaded or modified files by Synapse user and date with most recent dates first.  ***If new file counts do not immediately appear, try refreshing the page.***"
-wiki_content <- glue("[wiki_desc]\n\n${synapsetable?query=SELECT date%28FROM%5FUNIXTIME%28modifiedOn/1000%29%29 AS modifiedDate%2C modifiedBy%2C COUNT%28%2A%29 AS nFileModified FROM [synid_table_view] GROUP BY modifiedDate%2C modifiedBy ORDER BY modifiedDate DESC%2C modifiedBy ASC&showquery=true}", 
+wiki_content <- glue("[wiki_desc]\n\n${synapsetable?query=SELECT date%28FROM%5FUNIXTIME%28modifiedOn/1000%29%29 AS modifiedDate%2C modifiedBy%2C COUNT%28%2A%29 AS nFileModified FROM [synid_table_view] GROUP BY modifiedDate%2C modifiedBy ORDER BY modifiedDate DESC%2C modifiedBy ASC&showquery=false}", 
                      .open = "[", .close = "]")
 synid_dest <- create_synapse_wiki(synid_folder = synid_folder_input, content = wiki_content) 
 
