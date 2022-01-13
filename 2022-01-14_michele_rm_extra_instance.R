@@ -102,14 +102,15 @@ idx <- which(data[,"record_id"] == "GENIE-VICC-947519" &
                data[, "redcap_repeat_instance"] == " 1")
 subset <- data[-idx,]
 
-file_local <- get_synapse_entity_name(synid_file_vicc)
+file_local <- "vicc_bladder_fix.csv"
 write.csv(subset, row.names = F, file = file_local, na = "")
-save_to_synaps(path = file_local, 
+save_to_synapse(path = file_local, 
                 parent_id = synid_folder_output, 
+                file_name = get_synapse_entity_name(synid_file_vicc),
                 prov_name = "remove empty instance", 
                 prov_desc = "remove empty instance in latest VICC bladder upload", 
                 prov_used = synid_file_vicc, 
-                prov_exec = "2022-01-14_michele_rm_extra_instance.R")
+                prov_exec = "https://github.com/hhunterzinck/genie_requests/blob/main/2022-01-14_michele_rm_extra_instance.R")
 
 
 # close out ----------------------------
