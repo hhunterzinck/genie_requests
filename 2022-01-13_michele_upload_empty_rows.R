@@ -93,6 +93,8 @@ data <- get_synapse_entity_data_in_csv(synid_file_vicc, na.strings = "")
 
 subset <- data %>% filter(is.na(record_id)) 
 
+data %>% filter(record_id == "GENIE-VICC-947519" & redcap_repeat_instrument == "prissmm_tumor_marker" & redcap_repeat_instance == 1)
+
 print(subset)
 print(glue("Number of total rows: {nrow(data)}"))
 print(glue("Number of rows with missing record_id: {nrow(subset)}"))
