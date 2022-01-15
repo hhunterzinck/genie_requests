@@ -1,1 +1,0 @@
-R -f save_to_synapse.R --args "2021-08-30_tom_release_11_2_wake.html" "syn26145645" "wake sample IDs" "examine why WAKE sample IDs in mutation file to not match clinical file sample IDs" "syn7392892,syn22268698,syn22271205,syn9734573" "https://github.com/hhunterzinck/genie_requests/blob/main/2021-08-30_tom_release_11_2_wake.Rmd"
