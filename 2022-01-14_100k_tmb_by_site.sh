@@ -18,3 +18,5 @@ cd ~/
 
 # save and plot
 cd genie_requests/
+Rscript 2022-01-14_100k_tmb_by_site.R -i syn26838318 -o syn26838302 -v
+
