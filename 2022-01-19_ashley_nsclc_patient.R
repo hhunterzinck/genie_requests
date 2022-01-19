@@ -96,14 +96,14 @@ colnames(data) <- header
 
 # main ----------------------------
 
-data %>%
+print(data %>%
   filter(record_id == pt_id) %>%
-  count()
+  count())
 
-data %>% 
+print(data %>% 
   select(record_id) %>%
   distinct() %>%
-  arrange(record_id)
+  arrange(record_id))
 
 # close out ----------------------------
 
