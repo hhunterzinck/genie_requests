@@ -1,4 +1,5 @@
-# Description: Create TMB estimates and plot by site for 100k GENIE data.  
+# Description: Create plots by center and oncotree code for tumor-mutation burden
+#               distributions for 100k GENIE samples.  
 # Author: Haley Hunter-Zinck
 # Date: 2022-01-14
 
@@ -42,15 +43,16 @@ tic = as.double(Sys.time())
 
 library(glue)
 library(dplyr)
-library(RColorBrewer)
+library(ggplot2)
 library(synapser)
 synLogin()
 
-# synapse
-synid_file_sample <- "syn7517674"
-
 # files
+synid_table_sample <- "syn7517674"
 outplot <- "tmb.pdf"
+
+# constants
+BINS <- c("Low (<2)", "Mid (2-16)", "High (>16)")
 
 # functions ----------------------------
 
@@ -126,59 +128,51 @@ save_to_synapse <- function(path,
 
 data <- get_synapse_entity_data_in_csv(synid_file_input, sep = "\t")
 
-query <- glue("SELECT SAMPLE_ID, ONCOTREE_CODE FROM {synid_file_sample}")
-sam <- as.data.frame(synTableQuery(query, includeRowIdAndRowVersion = T))
+query <- glue("SELECT SAMPLE_ID, ONCOTREE_CODE FROM {synid_table_sample}")
+sam <- as.data.frame(synTableQuery(query, includeRowIdAndRowVersion = F))
 
 # main ----------------------------
 
+# join TMB and sample info
 mut <- data %>% 
   mutate(center = unlist(lapply(strsplit(SAMPLE_ID, split = "-"), function(x) {return(x[[2]])}))) %>%
   left_join(sam, by = "SAMPLE_ID")
 
-u_bin <- unlist(data %>% select(tmb_bin) %>% distinct())
-agg_tab <- aggregate(factor(tmb_bin, levels = u_bin) ~ center, data = mut, FUN = table)
-agg_med <- aggregate(tmb ~ center, data = mut, FUN = median)
-agg_n <- aggregate(tmb ~ center, data = mut, FUN = length)
+# TMB bin by center
+df_center <- mut %>%
+  group_by(tmb_bin, center) %>%
+  count()
 
-agg_med_cancer <- aggregate(tmb ~ ONCOTREE_CODE, data = mut, FUN = median)
-agg_n_cancer <- aggregate(tmb ~ ONCOTREE_CODE, data = mut, FUN = length)
-agg_tab_cancer <- aggregate(factor(tmb_bin, levels = u_bin) ~ ONCOTREE_CODE, data = mut, FUN = table)
+# TMB bin by code
+common_code <- as.character(unlist(mut %>% 
+  group_by(ONCOTREE_CODE) %>%
+  count() %>% 
+  filter(n > 1000 & !is.na(ONCOTREE_CODE)) %>%
+  select(ONCOTREE_CODE)))
+df_cancer <- mut %>%
+  filter(is.element(ONCOTREE_CODE, common_code)) %>%
+  group_by(tmb_bin, ONCOTREE_CODE) %>%
+  count()
 
-idx <- which(agg_n_cancer[[2]] > 1000)
-agg_tab_cancer_subset <- list(agg_tab_cancer[[1]][idx], agg_tab_cancer[[2]][idx,])
-
-# plot -------------------
+# plots -----------------------------
 
 pdf(outplot)
 
-# high/med/low by center
-#colors = setNames(c("gray80", "gray50", "gray20"), colnames(agg_tab[[2]]))
-colors = setNames(brewer.pal(n = ncol(agg_tab[[2]]), name = "Dark2"), colnames(agg_tab[[2]]))
-barplot(t(agg_tab[[2]] / rowSums(agg_tab[[2]])), horiz = T, names = agg_tab[[1]], las = 1, col = colors[colnames(agg_tab[[2]])],
-        xlab = "Fraction of samples in TMB bin", main = "Sample TMB bin by center")
-legend(x = "topright", legend = colnames(agg_tab[[2]]), pch = 15, col = colors)
+# plot TMB bin by center
+ggplot(df_center, aes(fill = factor(tmb_bin, levels = BINS), y = n, x = factor(center, levels = rev(sort(unique(center)))))) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(fill = "TMB bin") +
+  ylab("Fraction of samples") + 
+  xlab("Center") + 
+  coord_flip()
 
-# compare sample number and fraction of high/med/low
-frac_bin <- agg_tab[[2]] / rowSums(agg_tab[[2]])
-n_sample <- rowSums(agg_tab[[2]])
-plot(n_sample, frac_bin[,1], col = colors[colnames(frac_bin)[1]], xlab = "Number of samples per center",
-     ylab = "Fraction of samples in bin", main = "Fraction of samples in bin by number of samples")
-for (i in 2:ncol(frac_bin)) {
-  points(n_sample, frac_bin[,i], col = colors[colnames(frac_bin)[i]])
-}
-
-# get median tmb by sample count
-plot(agg_n[[2]], log10(agg_med[[2]]), xlab = "Number of samples per center", ylab = "Median TMB", 
-     main = "Median TMB per center", pch = 16)
-
-# tmb by oncotree code
-plot(agg_n_cancer[[2]], log10(agg_med_cancer[[2]]), xlab = "Number of samples per cancer", 
-     ylab = "Log10(TMB)", main = "TMB by cancer type")
-
-colors = setNames(brewer.pal(n = ncol(agg_tab_cancer_subset[[2]]), name = "Set3"), colnames(agg_tab_cancer_subset[[2]]))
-barplot(t(agg_tab_cancer_subset[[2]] / rowSums(agg_tab_cancer_subset[[2]])), horiz = T, names = agg_tab_cancer_subset[[1]], las = 1, col = colors[colnames(agg_tab[[2]])],
-        xlab = "Fraction of samples in TMB bin", main = "Sample TMB bin by OncoTree code")
-legend(x = "topleft", legend = colnames(agg_tab_cancer_subset[[2]]), pch = 15, col = colors)
+# plot TMB bin by cancer
+ggplot(df_cancer, aes(fill = factor(tmb_bin, levels = BINS), y = n, x = factor(ONCOTREE_CODE, levels = rev(sort(unique(ONCOTREE_CODE)))))) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(fill = "TMB bin") +
+  ylab("Fraction of samples") + 
+  xlab("OncoTree code") + 
+  coord_flip()
 
 graphics.off()
 
@@ -195,7 +189,7 @@ file.remove(outplot)
 
 # close out ----------------------------
 
-print(glue("Plots loaded to {synid_file_output}."))
+print(glue("Plots loaded to {synid_file_output} as '{outplot}'."))
 
 toc = as.double(Sys.time())
 print(glue("Runtime: {round(toc - tic)} s"))
