@@ -13,7 +13,9 @@ synLogin()
 
 # synapse
 synid_file_maf <- "syn5571527"
-synid_ver_maf <- "280"
+#synid_ver_maf <- "280" # 11.6-consortium
+#synid_ver_maf <- "281" # 12.1-consortium
+synid_ver_maf <- NA # current version
 
 # parameters
 missing_centers <- c("PROV", "COLU", "DUKE")
@@ -95,17 +97,15 @@ maf <- get_synapse_entity_data_in_csv(synid_file_maf, version = synid_ver_maf, s
 
 # main ----------------------------
 
-center <- unlist(lapply(strsplit(maf$Tumor_Sample_Barcode, split = "-"), function(x) {x[2]}))
 maf %>% 
-  mutate(center = center) %>%
-  group_by(center) %>%
-  count() 
+  group_by(Center) %>%
+  count() %>% 
+  arrange(Center)
 
 maf %>% 
-  mutate(center = center) %>%
-  group_by(center) %>%
+  group_by(Center) %>%
   count() %>% 
-  filter(is.element(center, missing_centers))
+  filter(is.element(Center, missing_centers))
 
 # close out ----------------------------
 
