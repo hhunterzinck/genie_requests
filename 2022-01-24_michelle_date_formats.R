@@ -13,7 +13,8 @@ synLogin()
 
 # synapse
 synid_file_sam <- "syn26718091"
-synid_ver_sam <- "3"
+#synid_ver_sam <- "3"
+synid_ver_sam <- "4"
 
 # parameters
 allowed <- c("Jan", "Apr", "Jul", "Oct", "release")
