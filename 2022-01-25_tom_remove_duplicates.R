@@ -123,7 +123,7 @@ save_to_synapse(path,
                 prov_name = "de-duplication", 
                 prov_desc = "remove duplicated variants from center flat file", 
                 prov_used = synid_file_uchi_flat, 
-                prov_exec = "")
+                prov_exec = "https://github.com/hhunterzinck/genie_requests/blob/main/2022-01-25_tom_remove_duplicates.R")
 
 # close out ----------------------------
 
