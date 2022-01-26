@@ -13,12 +13,14 @@ synLogin()
 
 # synapse
 synid_file_maf <- "syn5571527"
-synid_ver_maf <- "283"
+synid_ver_maf <- "284"
 synid_file_uchi <- "syn12978929"
 synid_ver_uchi <- "2"
 synid_file_uchi_proc <- "syn15673036"
-synid_ver_uchi_proc <- "73"
+synid_ver_uchi_proc <- "74"
 synid_ver_uchi_prev <- "71"
+synid_file_uchi_flat <- "syn22275379"
+synid_ver_uchi_flat <- "24"
 
 # functions ----------------------------
 
@@ -59,6 +61,7 @@ maf <- get_synapse_entity_data_in_csv(synid_file_maf, version = synid_ver_maf, s
 uchi <- get_synapse_entity_data_in_csv(synid_file_uchi, version = synid_ver_uchi, sep = "\t")
 uchi_proc <- get_synapse_entity_data_in_csv(synid_file_uchi_proc, version = synid_ver_uchi_proc, sep = "\t")
 uchi_prev <- get_synapse_entity_data_in_csv(synid_file_uchi_proc, version = synid_ver_uchi_prev, sep = "\t")
+uchi_flat <- get_synapse_entity_data_in_csv(synid_file_uchi_flat, version = synid_ver_uchi_flat, sep = "\t")
 
 # main ----------------------------
 
@@ -72,7 +75,7 @@ dup_by_center <- maf %>%
   filter(ind_dup) %>%
   group_by(Center) %>%
   count()
-print(glue("Number of duplicated variants: {sum(ind_dup)}"))
+print(glue("Number of duplicated variants in release maf ({synid_file_maf}.{synid_ver_maf}): {sum(ind_dup)}"))
 print(dup_by_center)
 
 nondup_by_center <- maf %>%
@@ -99,6 +102,11 @@ ind_dup_uchi_prev <- uchi_prev %>%
   select(Chromosome, Start_Position, Reference_Allele, Tumor_Seq_Allele2, Tumor_Sample_Barcode) %>%
   duplicated()
 print(glue("Number of duplicated variants in previous proccessed uchi upload ({synid_file_uchi_proc}.{synid_ver_uchi_prev}): {sum(ind_dup_uchi_prev)}"))
+
+ind_dup_uchi_flat <- uchi_flat %>% 
+  select(Chromosome, Start_Position, Reference_Allele, Tumor_Seq_Allele2, Tumor_Sample_Barcode) %>%
+  duplicated()
+print(glue("Number of duplicated variants in uchi flat file ({synid_file_uchi_flat}.{synid_ver_uchi_flat}): {sum(ind_dup_uchi_flat)}"))
 
 # close out ----------------------------
 
