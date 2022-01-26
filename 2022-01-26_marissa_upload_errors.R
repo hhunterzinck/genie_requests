@@ -137,12 +137,14 @@ pat_err_dead_na <- pat %>%
 # main: maf errors ----------------------------
 
 maf_allele_err <- maf %>% 
-  filter(Tumor_Seq_Allele1 != Tumor_Seq_Allele2 & Tumor_Seq_Allele1 != Reference_Allele) %>%
+  filter(Tumor_Seq_Allele1 != Reference_Allele) %>%
   mutate(synapse_id = glue("{synid_file_maf}.{synid_ver_maf}")) %>%
   mutate(check = 4) %>%
-  mutate(error = 'Tumor_Seq_Allele1 matches neither Reference_allele nor Tumor_Seq_Allele2') %>%
-  mutate(request = 'Please update the values to be match.') %>%
+  mutate(error = 'Tumor_Seq_Allele1 does not match the Reference_Allele') %>%
+  mutate(request = 'Please update Tumor_Seq_Allele1 or Reference_Allele to match.') %>%
   select(synapse_id, Tumor_Sample_Barcode, Reference_Allele, Tumor_Seq_Allele1, Tumor_Seq_Allele2, check, error, request)
+
+print(maf_allele_err)
 
 # write -------------------------------
 
