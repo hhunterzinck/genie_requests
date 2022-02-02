@@ -19,8 +19,7 @@ assay_info_df.columns = ['SEQ_ASSAY_ID']
 entity = syn.tableQuery("SELECT DISTINCT SEQ_ASSAY_ID as seq FROM syn7517674 WHERE CENTER = 'UHN'")
 uniq_seq_df = entity.asDataFrame()
 
-all_seq_assays_raw = assay_info_df.SEQ_ASSAY_ID.unique()
-all_seq_assays = [seq_assay.upper() for seq_assay in all_seq_assays_raw]
+all_seq_assays = assay_info_df.SEQ_ASSAY_ID.str.upper().unique()
 
 # should be true
 all([assay.startswith(center) for assay in all_seq_assays])
