@@ -326,20 +326,25 @@ res <- rbind(res, format_output(check_contact_redaction(pat),
 if (nrow(res) > 0) {
   to_write <- res %>%
     mutate(issue_no = 1:nrow(res), .before = PATIENT_ID) 
-  write.csv(to_write, file = outfile, row.names = F)
   
-  synid_file_output <- ""
-  if (!is.null(synid_folder_output)) {
-    synid_file_output <- save_to_synapse(path = outfile,
-                                         parent_id = synid_folder_output,
-                                         prov_name = 'upload error details',
-                                         prov_desc = 'row based error reporting and details for issues in uploaded files',
-                                         prov_used = synid_file_pat,
-                                         prov_exec = 'https://github.com/hhunterzinck/genie_requests/blob/main/2022-02-03_mg_vital_error_details.R')
-    
-    file.remove(outfile)
-  }
+} else {
+  header <- c("issue_no",colnames(res))
+  to_write <- matrix(NA, nrow = 0, ncol = length(header), dimnames = list(c(), header))
 }
+write.csv(to_write, file = outfile, row.names = F)
+
+synid_file_output <- ""
+if (!is.null(synid_folder_output)) {
+  synid_file_output <- save_to_synapse(path = outfile,
+                                       parent_id = synid_folder_output,
+                                       prov_name = 'upload error details',
+                                       prov_desc = 'row based error reporting and details for issues in uploaded files',
+                                       prov_used = synid_file_pat,
+                                       prov_exec = 'https://github.com/hhunterzinck/genie_requests/blob/main/2022-02-03_mg_vital_error_details.R')
+  
+  file.remove(outfile)
+}
+
 # close out ----------------------------
 
 if (verbose) {
