@@ -197,6 +197,17 @@ check_dead_value <- function(pat,
   
 }
 
+check_contact_redaction <- function(pat) {
+  res <- pat %>%
+    filter(grepl(pattern = "[<>]", x = YEAR_CONTACT) & !grepl(pattern = "[<>]", x = INT_CONTACT) |
+             !grepl(pattern = "[<>]", x = YEAR_CONTACT) & grepl(pattern = "[<>]", x = INT_CONTACT)) %>%
+    mutate(YEAR = YEAR_CONTACT) %>%
+    mutate(INT = INT_CONTACT) %>%
+    select(PATIENT_ID, YEAR, INT, DEAD)
+  
+  return(res)
+}
+
 check_contact_text <- function(pat, strs_text = c("Unknown", "Not Collected", "Not Applicable", "Not Released")) {
   res <- pat %>%
     filter((is.element(YEAR_CONTACT, strs_text) | is.element(INT_CONTACT, strs_text)) & YEAR_CONTACT != INT_CONTACT) %>%
@@ -302,6 +313,12 @@ res <- rbind(res, format_output(check_contact_text(pat),
                                 check_no = 7,
                                 error = 'Numeric and text values are inconsistent between YEAR_CONTACT and INT_CONTACT',
                                 request = 'Please use numeric values for both or neither.'))
+res <- rbind(res, format_output(check_contact_redaction(pat), 
+                                synid_file_pat = synid_file_pat, 
+                                synid_ver_pat = synid_ver_pat,
+                                check_no = 8,
+                                error = 'Redaction is inconsistent between YEAR_CONTACT and INT_CONTACT',
+                                request = 'Please redact both or neither value.'))
 
 
 # write ----------------------------
