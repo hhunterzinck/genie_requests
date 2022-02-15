@@ -13,6 +13,7 @@ synLogin()
 
 # synapse
 synid_file_vicc <- "syn25541702"
+synid_file_uhn <- "syn26033209"
 
 # functions ----------------------------
 
@@ -88,11 +89,18 @@ save_to_synapse <- function(path,
 
 # read ----------------------------
 
-data <- get_synapse_entity_data_in_csv(synid_file_vicc)
+vicc <- get_synapse_entity_data_in_csv(synid_file_vicc)
+uhn <- get_synapse_entity_data_in_csv(synid_file_uhn)
 
 # main ----------------------------
 
-print(colnames(data))
+print(setdiff(colnames(vicc), colnames(uhn)))
+print(setdiff(colnames(uhn), colnames(vicc)))
+
+config <- list()
+config$column_name$patient_id = 'record_id'
+uhn_noirr <- uhn %>%
+  filter(!grepl(pattern = "[_-]2$", x = (!!as.symbol(config$column_name$patient_id))))
 
 
 # close out ----------------------------
