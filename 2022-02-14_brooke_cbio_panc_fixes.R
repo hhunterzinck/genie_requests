@@ -13,6 +13,8 @@ synLogin()
 
 # synapse
 synid_file_treatment <- "syn26349077"
+synid_file_der <- "syn22296816"
+synid_file_survival <- "syn26349089"
 
 # functions ----------------------------
 
@@ -89,7 +91,8 @@ save_to_synapse <- function(path,
 # read ----------------------------
 
 treatment <- get_synapse_entity_data_in_csv(synid_file_treatment, sep = "\t")
-
+der <- get_synapse_entity_data_in_csv(synid_file_der)
+survival <- get_synapse_entity_data_in_csv(synid_file_survival, sep = "\t")
 
 # main ----------------------------
 
@@ -100,6 +103,29 @@ treatment %>%
 treatment %>% 
   select(TREATMENT_TYPE) %>%
   distinct()
+
+der %>% 
+  filter(cohort == 'PANC') %>%
+  select(dob_first_index_ca) %>%
+  distinct()
+
+der %>%
+  filter(cohort == 'PANC') %>%
+  filter(is.na(dob_first_index_ca)) %>%
+  count()
+
+der %>%
+  filter(cohort == 'PANC') %>%
+  filter(!is.na(dob_first_index_ca)) %>%
+  count()
+
+der %>%
+  filter(cohort == 'PANC') %>%
+  count()
+
+survival %>% 
+  filter(PFS_I_ADV_STATUS != "") %>%
+  count()
 
 # close out ----------------------------
 
