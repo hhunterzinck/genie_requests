@@ -96,6 +96,26 @@ survival <- get_synapse_entity_data_in_csv(synid_file_survival, sep = "\t")
 
 setdiff(tolower(colnames(survival)), colnames(der))
 
+pt <- unlist(survival %>% 
+  select(PATIENT_ID) %>%
+  distinct())
+n_pt <- length(pt)
+
+fil <- unlist(survival %>% 
+  filter(!is.na(PFS_I_ADV_STATUS) & PFS_I_ADV_STATUS != "") %>%
+  select(PATIENT_ID) %>%
+  distinct())
+n_fil = length(fil)
+
+discrep <- setdiff(pt, fil)
+discrep_preview <- survival %>% 
+  filter(is.element(PATIENT_ID, discrep)) 
+
+fil2 <- unlist(survival %>% 
+                 filter(!is.na(PFS_I_ADV_STATUS) & PFS_I_ADV_STATUS != "" | !duplicated(PATIENT_ID)) %>%
+                 select(PATIENT_ID) %>%
+                 distinct())
+
 # close out ----------------------------
 
 toc = as.double(Sys.time())
