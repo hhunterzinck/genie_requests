@@ -122,14 +122,26 @@ n_fil_count <- fil %>%
   count()
 
 print(n_fil_distinct == n_fil_count)
-
-
 print(glue("n_unique_pt = {n_unique_pt}"))
 print(glue("n_fil_distinct = {n_fil_distinct}"))
 print(glue("n_fil_count = {n_fil_count}"))
+print(head(survival))
+print(head(fil))
 
-# mod ---------------------
+# alternate ----------------------------
 
+idx_na <- which(is.na(survival[,"PFS_I_ADV_STATUS"]) | survival[,"PFS_I_ADV_STATUS"] == "")
+idx_dup <- which(duplicated(survival[,"PATIENT_ID"], fromLast = F) |
+                 duplicated(survival[,"PATIENT_ID"], fromLast = T))
+idx_rm <- intersect(idx_dup, idx_na)
+if (length(idx_rm)) {
+  fil_alt <- survival[-idx_rm,]
+} else {
+  fil_alt <- survival
+}
+
+print("Percentage of patients in newly filtered df: ")
+print(length(intersect(pt, fil_alt[,"PATIENT_ID"])) / length(pt) * 100)
 
 # close out ----------------------------
 
