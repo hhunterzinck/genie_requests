@@ -4,6 +4,7 @@
 
 # setup ----------------------------
 
+rm(list = ls())
 tic = as.double(Sys.time())
 
 library(glue)
@@ -12,8 +13,9 @@ library(synapser)
 synLogin()
 
 # synapse
-synid_file_der <- "syn22296816"
-synid_file_survival <- "syn26349089"
+#synid_file_survival <- "syn26349089" # PANC
+#synid_file_survival <- "syn26475431" # Prostate
+synid_file_survival <- "syn26990173" # BLADDER
 
 # functions ----------------------------
 
@@ -89,32 +91,57 @@ save_to_synapse <- function(path,
 
 # read ----------------------------
 
-der <- get_synapse_entity_data_in_csv(synid_file_der)
 survival <- get_synapse_entity_data_in_csv(synid_file_survival, sep = "\t")
 
 # main ----------------------------
 
-setdiff(tolower(colnames(survival)), colnames(der))
-
 pt <- unlist(survival %>% 
   select(PATIENT_ID) %>%
   distinct())
-n_pt <- length(pt)
+n_unique_pt <- length(pt)
 
-fil <- unlist(survival %>% 
-  filter(!is.na(PFS_I_ADV_STATUS) & PFS_I_ADV_STATUS != "") %>%
+idx_rm <- c()
+for (i in 1:length(pt)) {
+  idx <- which(survival[,"PATIENT_ID"] == pt[i])
+  if (length(idx) > 1) {
+    idx_rm <- c(idx_rm, which(survival[,"PATIENT_ID"] == pt[i] & (is.na(survival[,"PFS_I_ADV_STATUS"]) | survival[,"PFS_I_ADV_STATUS"] == "")))
+  }
+}
+
+if (length(idx_rm)) {
+  fil <- survival[-idx_rm,]
+} else {
+  fil <- survival
+}
+
+n_fil_distinct <- fil %>% 
   select(PATIENT_ID) %>%
-  distinct())
-n_fil = length(fil)
+  distinct() %>%
+  count()
+n_fil_count <- fil %>% 
+  count()
 
-discrep <- setdiff(pt, fil)
-discrep_preview <- survival %>% 
-  filter(is.element(PATIENT_ID, discrep)) 
+print(n_fil_distinct == n_fil_count)
+print(glue("n_unique_pt = {n_unique_pt}"))
+print(glue("n_fil_distinct = {n_fil_distinct}"))
+print(glue("n_fil_count = {n_fil_count}"))
+print(head(survival))
+print(head(fil))
 
-fil2 <- unlist(survival %>% 
-                 filter(!is.na(PFS_I_ADV_STATUS) & PFS_I_ADV_STATUS != "" | !duplicated(PATIENT_ID)) %>%
-                 select(PATIENT_ID) %>%
-                 distinct())
+# alternate ----------------------------
+
+idx_na <- which(is.na(survival[,"PFS_I_ADV_STATUS"]) | survival[,"PFS_I_ADV_STATUS"] == "")
+idx_dup <- which(duplicated(survival[,"PATIENT_ID"], fromLast = F) |
+                 duplicated(survival[,"PATIENT_ID"], fromLast = T))
+idx_rm <- intersect(idx_dup, idx_na)
+if (length(idx_rm)) {
+  fil_alt <- survival[-idx_rm,]
+} else {
+  fil_alt <- survival
+}
+
+print("Percentage of patients in newly filtered df: ")
+print(length(intersect(pt, fil_alt[,"PATIENT_ID"])) / length(pt) * 100)
 
 # close out ----------------------------
 
