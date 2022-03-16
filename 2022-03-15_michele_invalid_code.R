@@ -37,7 +37,8 @@ get_synapse_entity_data_in_csv <- function(synapse_id,
                                            na.strings = c("NA"), 
                                            header = T,
                                            check_names = F,
-                                           comment.char = "#") {
+                                           comment.char = "#",
+                                           colClasses = "character") {
   
   if (is.na(version)) {
     entity <- synGet(synapse_id)
@@ -47,7 +48,7 @@ get_synapse_entity_data_in_csv <- function(synapse_id,
   
   data <- read.csv(entity$path, stringsAsFactors = F, 
                    na.strings = na.strings, sep = sep, check.names = check_names,
-                   header = header, comment.char = comment.char)
+                   header = header, comment.char = comment.char, colClasses = colClasses)
   return(data)
 }
 
@@ -99,25 +100,6 @@ invalid_value <- data %>%
   filter(record_id == "GENIE-VICC-889760" & redcap_repeat_instrument == "prissmm_pathology" & redcap_repeat_instance == "3") %>%
   select(path_ca_hist19)
 print(invalid_value)
-
-# edit 
-idx = which(data$record_id == "GENIE-VICC-889760" & data$redcap_repeat_instrument == "prissmm_pathology" & data$redcap_repeat_instance == "3")
-mod <- data
-mod[idx,"path_ca_hist19"] <- "8140i"
-
-# write ----------------------------
-
-outfile <- "nsclc_vicc_fix.csv"
-file_name <- "VICC NSCLC Data"
-
-write.csv(mod, file = outfile, na = "", row.names = F, quote = F)
-save_to_synapse(path = outfile, 
-                parent_id = synid_folder_vicc, 
-                file_name = file_name, 
-                prov_name = "fix invalid value", 
-                prov_desc = "fix value that has a 0+ appended to the front", 
-                prov_used = synid_file_upload, 
-                prov_exec = "https://github.com/hhunterzinck/genie_requests/blob/main/2022-03-15_michele_invalid_code.R")
 
 # close out ----------------------------
 
