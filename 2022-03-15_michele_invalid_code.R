@@ -13,6 +13,8 @@ synLogin()
 
 # synapse
 synid_file_upload <- "syn25579921"
+synid_file_version <- 5
+synid_folder_vicc <- "syn26243326"
 
 # functions ----------------------------
 
@@ -49,19 +51,73 @@ get_synapse_entity_data_in_csv <- function(synapse_id,
   return(data)
 }
 
+#' Store a file on Synapse with options to define provenance.
+#' 
+#' @param path Path to the file on the local machine.
+#' @param parent_id Synapse ID of the folder or project to which to load the file.
+#' @param file_name Name of the Synapse entity once loaded
+#' @param prov_name Provenance short description title
+#' @param prov_desc Provenance long description
+#' @param prov_used Vector of Synapse IDs of data used to create the current
+#' file to be loaded.
+#' @param prov_exec String representing URL to script used to create the file.
+#' @return Synapse ID of entity representing file
+save_to_synapse <- function(path, 
+                            parent_id, 
+                            file_name = NA, 
+                            prov_name = NA, 
+                            prov_desc = NA, 
+                            prov_used = NA, 
+                            prov_exec = NA) {
+  
+  if (is.na(file_name)) {
+    file_name = path
+  } 
+  file <- File(path = path, parentId = parent_id, name = file_name)
+  
+  if (!is.na(prov_name) || !is.na(prov_desc) || !is.na(prov_used) || !is.na(prov_exec)) {
+    act <- Activity(name = prov_name,
+                    description = prov_desc,
+                    used = prov_used,
+                    executed = prov_exec)
+    file <- synStore(file, activity = act)
+  } else {
+    file <- synStore(file)
+  }
+  
+  return(file$properties$id)
+}
+
 # read ----------------------------
 
-data <- get_synapse_entity_data_in_csv(synid_file_upload)
-
+data <- get_synapse_entity_data_in_csv(synid_file_upload, version = synid_file_version)
 
 # main ----------------------------
 
+# investigate value
 invalid_value <- data %>%
   filter(record_id == "GENIE-VICC-889760" & redcap_repeat_instrument == "prissmm_pathology" & redcap_repeat_instance == "3") %>%
-  select("path_ca_hist19")
-
+  select(path_ca_hist19)
 print(invalid_value)
 
+# edit 
+idx = which(data$record_id == "GENIE-VICC-889760" & data$redcap_repeat_instrument == "prissmm_pathology" & data$redcap_repeat_instance == "3")
+mod <- data
+mod[idx,"path_ca_hist19"] <- "8140i"
+
+# write ----------------------------
+
+outfile <- "nsclc_vicc_fix.csv"
+file_name <- "VICC NSCLC Data"
+
+write.csv(mod, file = outfile, na = "", row.names = F, quote = F)
+save_to_synapse(path = outfile, 
+                parent_id = synid_folder_vicc, 
+                file_name = file_name, 
+                prov_name = "fix invalid value", 
+                prov_desc = "fix value that has a 0+ appended to the front", 
+                prov_used = synid_file_upload, 
+                prov_exec = "https://github.com/hhunterzinck/genie_requests/blob/main/2022-03-15_michele_invalid_code.R")
 
 # close out ----------------------------
 
