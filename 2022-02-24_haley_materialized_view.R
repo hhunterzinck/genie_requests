@@ -16,11 +16,11 @@ synLogin()
 
 # synapse
 synid_project_test <- "syn25921894"
-synid_table_pt <- "syn27241326"
-synid_table_file <- "syn27241407"
+synid_table_pt <- "syn27240986"
+synid_table_file <- "syn27240957"
 
 # parameters
-name <- "my-second-join"
+name <- "my-r-materialized-view"
 
 # functions ----------------------------
 
@@ -38,7 +38,7 @@ store_synapse_join <- function(query, parent_id, name) {
 
 # main ----------------------------
 
-query <- glue("SELECT * FROM {synid_table_pt} AS a JOIN {synid_table_file} AS b ON (a.patient_id = b.patient_id)")
+query <- glue("SELECT F.patient_id AS patient_id, F.patient_age AS patient_age, P.file_id AS file_id, P.name FROM {synid_table_pt} AS F JOIN {synid_table_file} AS P ON (P.patient_id = F.patient_id)")
 synid_mv_join <- store_synapse_join(query = query, parent_id = synid_project_test, name = name)
 
 # close out ----------------------------
