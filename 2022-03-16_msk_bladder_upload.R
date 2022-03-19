@@ -14,6 +14,9 @@ synLogin()
 # synapse
 synid_file_upload <- "syn26250083"
 
+# parameters
+pt_rm <- c("GENIE-MSK-P-0021348")
+
 # functions ----------------------------
 
 #' Download and load data stored in csv or other delimited format on Synapse
@@ -55,10 +58,19 @@ data <- get_synapse_entity_data_in_csv(synid_file_upload)
 
 # main ----------------------------
 
-data %>%
+n_pt <- data %>%
   select(record_id) %>%
   distinct() %>%
   count()
+
+data %>% 
+  filter(is.element(record_id, pt_rm)) %>%
+  select(record_id) %>%
+  distinct()
+
+# report out --------------
+
+print(glue("Number of patients: {n_pt}"))
 
 
 # close out ----------------------------
