@@ -13,10 +13,9 @@ synLogin()
 
 # synapse
 synid_folder_upload <- "syn20852283"
-#synid_folder_upload <- "syn27001905"
 
 # parameters
-cohorts <- c("OVARIAN", "ESOPHAGO", "RENAL", "MELANOMA")
+cohorts <- c("OVARIAN", "ESOPHAGO", "RENAL", "MELANOMA", "CRC2", "NSCLC2")
 sites <- c("DFCI", "MSK", "UHN", "VICC")
 file_placeholder <- "placeholder.txt"
 
